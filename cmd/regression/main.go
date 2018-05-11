@@ -1,0 +1,84 @@
+package main
+
+import (
+	"os"
+
+	"github.com/src-d/regression-gitbase"
+
+	flags "github.com/jessevdk/go-flags"
+	"gopkg.in/src-d/go-log.v0"
+	"gopkg.in/src-d/regression-core.v0"
+)
+
+var description = `gitbase regression tester.
+
+This tool executes several versions of gitbase and compares query times and resource usage. There should be at least two versions specified as arguments in the following way:
+
+* v0.12.1 - release name from github (https://github.com/src-d/gitbase/releases). The binary will be downloaded.
+* latest - latest release from github. The binary will be downloaded.
+* remote:master - any tag or branch from gitbase repository. The binary will be built automatically.
+* local:fix/some-bug - tag or branch from the repository in the current directory. The binary will be built.
+* pull:266 - code from pull request #266 from gitbase repo. Binary is built.
+* /path/to/gitbase - a gitbase binary built locally.
+
+The repositories and downloaded/built gitbase binaries are cached by default in "repos" and "binaries" repositories from the current directory.
+`
+
+func main() {
+	config := regression.NewConfig()
+	parser := flags.NewParser(&config, flags.Default)
+	parser.LongDescription = description
+
+	args, err := parser.Parse()
+	if err != nil {
+		if err, ok := err.(*flags.Error); ok {
+			if err.Type == flags.ErrHelp {
+				os.Exit(0)
+			}
+		}
+
+		log.Errorf(err, "Could not parse arguments")
+		os.Exit(1)
+	}
+
+	if config.ShowRepos {
+		repos := regression.NewDefaultRepositories(config)
+		repos.ShowRepos()
+		os.Exit(0)
+	}
+
+	if len(args) < 2 {
+		log.Errorf(nil, "There should be at least two versions")
+		os.Exit(1)
+	}
+
+	config.Versions = args
+
+	test, err := gitbase.NewTest(config)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Infof("Preparing run")
+	err = test.Prepare()
+	if err != nil {
+		log.Errorf(err, "Could not prepare environment")
+		os.Exit(1)
+	}
+
+	err = test.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	res := test.GetResults()
+
+	// err = test.Stop()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	if !res {
+		os.Exit(1)
+	}
+}
