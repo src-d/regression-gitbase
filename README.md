@@ -4,7 +4,7 @@
 
 ```
 Usage:
-  main [OPTIONS]
+  regression [OPTIONS]
 
 gitbase regression tester.
 
