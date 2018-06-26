@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/src-d/go-log.v0"
+	"gopkg.in/src-d/go-log.v1"
 	"gopkg.in/src-d/regression-core.v0"
 )
 
@@ -61,8 +61,7 @@ func (t *Test) Run() error {
 			panic("gitbase not initialized. Was Prepare called?")
 		}
 
-		l, _ := log.New()
-		l = l.New(log.Fields{"version": version})
+		l := log.With(log.Fields{"version": version})
 
 		l.Infof("Running version tests")
 
@@ -128,13 +127,12 @@ func (t *Test) runTest(
 	repos string,
 	query Query,
 ) (*Result, error) {
-	l, _ := log.New()
 	log.Infof("Executing gitbase test")
 
 	server := NewServer(gitbase.Path, repos)
 	err := server.Start()
 	if err != nil {
-		l.New(log.Fields{
+		log.With(log.Fields{
 			"repos":   repos,
 			"gitbase": gitbase.Path,
 		}).Errorf(err, "Could not execute gitbase")
@@ -162,7 +160,7 @@ func (t *Test) runTest(
 
 	rusage := server.Rusage()
 
-	l.New(log.Fields{
+	log.With(log.Fields{
 		"wall":   wall,
 		"memory": rusage.Maxrss,
 	}).Infof("Finished queries")
