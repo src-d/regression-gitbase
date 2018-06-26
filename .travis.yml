@@ -26,6 +26,7 @@ addons:
 install:
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 90
+  - sudo service mysql stop
 
 script:
   - make dependencies
