@@ -4,6 +4,7 @@ MAINTAINER source{d}
 ENV LOG_LEVEL=debug
 ENV REG_REPOS=/cache/repos
 ENV REG_BINARIES=/cache/binaries
+ENV GITBASE_UNSTABLE_SQUASH_ENABLE=true
 
 RUN apt-get update && \
     apt-get install -y dumb-init \
