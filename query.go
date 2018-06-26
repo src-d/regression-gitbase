@@ -24,59 +24,60 @@ var DefaultQueries = []Query{
 	{
 		"Count repositories",
 		[]string{`
-	SELECT COUNT(DISTINCT id) AS repository_count
+	SELECT COUNT(DISTINCT repository_id) AS repository_count
 	FROM repositories`},
 	},
 	{
 		"Last commit messages in HEAD for every repository",
 		[]string{`
-	SELECT c.message
+	SELECT c.commit_message
 	FROM
 		refs r
-		JOIN commits c ON r.hash = c.hash
+		JOIN commits c ON r.commit_hash = c.commit_hash
 	WHERE
-		r.name = 'refs/heads/HEAD';`},
+		r.ref_name = 'HEAD';`},
 	},
-	{
-		"All commit messages in HEAD history for every repository",
-		[]string{`
-	SELECT c.message
-	FROM
-		commits c
-		JOIN refs r ON r.hash = c.hash
-	WHERE
-		r.name = 'refs/heads/HEAD' AND
-		history_idx(r.hash, c.hash) >= 0;`},
-	},
-	{
-		"Top 10 repositories by commit count in HEAD",
-		[]string{`
-	SELECT
-		repository_id,
-		commit_count
-	FROM (
-		SELECT
-			r.repository_id,
-			count(*) AS commit_count
-		FROM
-			refs r
-			JOIN commits c ON history_idx(r.hash, c.hash) >= 0
-		WHERE
-			r.name = 'refs/heads/HEAD'
-		GROUP BY r.repository_id
-	) AS q
-	ORDER BY commit_count DESC
-	LIMIT 10;`},
-	},
-	{
-		"Count repository HEADs",
-		[]string{`
-	SELECT
-		COUNT(DISTINCT r.repository_id) AS head_count
-	FROM
-		refs r
-	WHERE name = 'refs/heads/HEAD';`},
-	},
+	// {
+	// 	"All commit messages in HEAD history for every repository",
+	// 	[]string{`
+	// SELECT c.message
+	// FROM
+	// 	commits c
+	// 	JOIN refs r ON r.commit_hash = c.commit_hash
+	// WHERE
+	// 	r.name = 'refs/heads/HEAD' AND
+	// 	history_idx(r.hash, c.hash) >= 0;`},
+	// },
+	// {
+	// 	"Top 10 repositories by commit count in HEAD",
+	// 	[]string{`
+	// SELECT
+	// 	repository_id,
+	// 	commit_count
+	// FROM (
+	// 	SELECT
+	// 		r.repository_id,
+	// 		count(*) AS commit_count
+	// 	FROM
+	// 		refs r
+	// 		JOIN commits c ON history_idx(r.hash, c.hash) >= 0
+	// 	WHERE
+	// 		r.name = 'refs/heads/HEAD'
+	// 	GROUP BY r.repository_id
+	// ) AS q
+	// ORDER BY commit_count DESC
+	// LIMIT 10;`},
+	// },
+	// {
+	// 	"Count repository HEADs",
+	// 	[]string{`
+	// SELECT
+	// 	COUNT(DISTINCT r.repository_id) AS head_count
+	// FROM
+	// 	refs r
+	// WHERE name = 'refs/heads/HEAD';`},
+	// },
+
 	// {
 	// 	"Repository count by language presence (HEAD, no forks)",
 	// 	[]string{`

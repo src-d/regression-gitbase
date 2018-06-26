@@ -23,7 +23,10 @@ type Test struct {
 
 // NewTest creates a new Test struct.
 func NewTest(config regression.Config) (*Test, error) {
-	repos := regression.NewDefaultRepositories(config)
+	repos, err := regression.NewRepositories(config)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Test{
 		config:  config,
@@ -192,7 +195,7 @@ func (t *Test) prepareRepos() error {
 
 func (t *Test) prepareGitbase() error {
 	log.Infof("Preparing gitbase binaries")
-	releases := regression.NewReleases("src-d", "gitbase")
+	releases := regression.NewReleases("src-d", "gitbase", t.config.GitHubToken)
 
 	t.gitbase = make(map[string]*regression.Binary, len(t.config.Versions))
 	for _, version := range t.config.Versions {

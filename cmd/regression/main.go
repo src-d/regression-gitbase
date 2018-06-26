@@ -42,7 +42,12 @@ func main() {
 	}
 
 	if config.ShowRepos {
-		repos := regression.NewDefaultRepositories(config)
+		repos, err := regression.NewRepositories(config)
+		if err != nil {
+			log.Errorf(err, "Could not get repositories")
+			os.Exit(1)
+		}
+
 		repos.ShowRepos()
 		os.Exit(0)
 	}

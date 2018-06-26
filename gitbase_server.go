@@ -27,5 +27,10 @@ func (s *Server) URL() string {
 
 // Start spawns a new gitbase server.
 func (s *Server) Start() error {
-	return s.Server.Start(s.binary, "server", "-g", s.repos)
+	return s.Server.Start(
+		s.binary,
+		"server",
+		"-g", s.repos,
+		"-i", "/tmp",
+	)
 }
