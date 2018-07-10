@@ -1,8 +1,6 @@
 package gitbase
 
 import (
-	"path/filepath"
-
 	"gopkg.in/src-d/regression-core.v0"
 )
 
@@ -13,11 +11,6 @@ func NewToolGitbase() regression.Tool {
 		GitURL:      "https://github.com/src-d/gitbase",
 		ProjectPath: "github.com/src-d/gitbase",
 		BuildSteps: []regression.BuildStep{
-			{
-				Dir:     filepath.Join("vendor", "gopkg.in", "bblfsh", "client-go.v2"),
-				Command: "make",
-				Args:    []string{"dependencies"},
-			},
 			{
 				Dir:     "",
 				Command: "make",

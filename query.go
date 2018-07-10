@@ -89,6 +89,46 @@ var DefaultQueries = []Query{
 		ORDER BY contributor_count DESC
 		LIMIT 10;`},
 	},
+	{
+		"Create index on language UDF",
+		[]string{`CREATE INDEX language_idx
+		ON files(language(file_path, blob_content))
+		WITH (async = false)`},
+	},
+	{
+		"Query by language using the index",
+		[]string{
+			`CREATE INDEX language_idx
+			ON files(language(file_path, blob_content))
+			WITH (async = false)`,
+
+			`SELECT file_path
+			FROM files
+			WHERE language(file_path, blob_content) = 'Go'`,
+
+			`DROP INDEX language_idx ON files`,
+		},
+	},
+	{
+		"Query all files from HEAD",
+		[]string{`
+		SELECT cf.file_path, f.blob_content
+		FROM ref_commits r
+		NATURAL JOIN commit_files cf
+		NATURAL JOIN files f
+		WHERE r.ref_name = 'HEAD' AND r.index = 0`},
+	},
+	{
+		"Get all LICENSE blobs using index",
+		[]string{
+			`CREATE INDEX file_path_idx
+			ON files(file_path) WITH (async = false)`,
+
+			`SELECT blob_content
+			FROM files
+			WHERE file_path = 'LICENSE'`,
+		},
+	},
 }
 
 // Query struct has information about on query. It can consist on more than

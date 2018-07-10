@@ -19,6 +19,7 @@ type Test struct {
 	gitbase   map[string]*regression.Binary
 	results   versionResults
 	queries   []Query
+	log       log.Logger
 }
 
 // NewTest creates a new Test struct.
@@ -28,10 +29,16 @@ func NewTest(config regression.Config) (*Test, error) {
 		return nil, err
 	}
 
+	l, err := (&log.LoggerFactory{Level: log.InfoLevel}).New(log.Fields{})
+	if err != nil {
+		return nil, err
+	}
+
 	return &Test{
 		config:  config,
 		repos:   repos,
 		queries: DefaultQueries,
+		log:     l,
 	}, nil
 }
 
@@ -61,7 +68,7 @@ func (t *Test) Run() error {
 			panic("gitbase not initialized. Was Prepare called?")
 		}
 
-		l := log.With(log.Fields{"version": version})
+		l := t.log.New(log.Fields{"version": version})
 
 		l.Infof("Running version tests")
 
@@ -127,12 +134,12 @@ func (t *Test) runTest(
 	repos string,
 	query Query,
 ) (*Result, error) {
-	log.Infof("Executing gitbase test")
+	t.log.Infof("Executing gitbase test")
 
 	server := NewServer(gitbase.Path, repos)
 	err := server.Start()
 	if err != nil {
-		log.With(log.Fields{
+		t.log.With(log.Fields{
 			"repos":   repos,
 			"gitbase": gitbase.Path,
 		}).Errorf(err, "Could not execute gitbase")
@@ -160,7 +167,7 @@ func (t *Test) runTest(
 
 	rusage := server.Rusage()
 
-	log.With(log.Fields{
+	t.log.With(log.Fields{
 		"wall":   wall,
 		"memory": rusage.Maxrss,
 	}).Infof("Finished queries")
@@ -181,7 +188,7 @@ func (t *Test) runTest(
 }
 
 func (t *Test) prepareRepos() error {
-	log.Infof("Downloading repositories")
+	t.log.Infof("Downloading repositories")
 	err := t.repos.Download()
 	if err != nil {
 		return err
@@ -192,7 +199,7 @@ func (t *Test) prepareRepos() error {
 }
 
 func (t *Test) prepareGitbase() error {
-	log.Infof("Preparing gitbase binaries")
+	t.log.Infof("Preparing gitbase binaries")
 	releases := regression.NewReleases("src-d", "gitbase", t.config.GitHubToken)
 
 	t.gitbase = make(map[string]*regression.Binary, len(t.config.Versions))
