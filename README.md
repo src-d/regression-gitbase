@@ -42,6 +42,14 @@ Help Options:
   -h, --help        Show this help message
 ```
 
+To run this, you will need to have a working installation of [pilosa](https://github.com/pilosa/pilosa).
+
+If you're manually running the regression-gitbase binary, you just need to have a pilosa server available. A pilosa server can be started using docker with the following command:
+
+```
+docker run -d --name pilosa -p 127.0.0.1:10101:10101 pilosa/pilosa:v0.9.0
+```
+
 ## License
 
 Licensed under the terms of the Apache License Version 2.0. See the `LICENSE`

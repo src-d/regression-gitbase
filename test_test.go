@@ -13,7 +13,7 @@ func TestTest(t *testing.T) {
 	config := regression.NewConfig()
 	config.RepositoriesCache = "repo"
 	config.BinaryCache = "binaries"
-	config.Versions = []string{"remote:v0.13.0", "remote:master"}
+	config.Versions = []string{"remote:regression", "remote:master"}
 	config.Complexity = 0
 	config.Repeat = 1
 
