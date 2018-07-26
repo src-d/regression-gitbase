@@ -129,6 +129,54 @@ var DefaultQueries = []Query{
 			WHERE file_path = 'LICENSE'`,
 		},
 	},
+	{
+		"10 top repos by file count in HEAD",
+		[]string{`
+			SELECT repository_id, num_files FROM (
+				SELECT COUNT(f.*) num_files, f.repository_id
+				FROM ref_commits r
+				INNER JOIN commit_files cf 
+					ON r.commit_hash = cf.commit_hash 
+					AND r.repository_id = cf.repository_id
+				INNER JOIN files f
+					ON cf.repository_id = f.repository_id
+					AND cf.blob_hash = f.blob_hash
+					AND cf.tree_hash = f.tree_hash
+					AND cf.file_path = f.file_path
+				WHERE r.ref_name = 'HEAD'
+				GROUP BY f.repository_id
+			) t
+			ORDER BY num_files DESC
+			LIMIT 10
+		`},
+	},
+	{
+		"Top committers per repository",
+		[]string{`
+			SELECT * FROM (
+				SELECT
+					commit_author_email as author,
+					repository_id as id,
+					count(*) as num_commits
+				FROM commits
+				GROUP BY commit_author_email, repository_id
+			) t
+			ORDER BY num_commits DESC
+		`},
+	},
+	{
+		"Top committers in all repositories",
+		[]string{`
+			SELECT * FROM (
+				SELECT
+					commit_author_email as author,
+					count(*) as num_commits
+				FROM commits
+				GROUP BY commit_author_email
+			) t
+			ORDER BY num_commits DESC
+		`},
+	},
 }
 
 // Query struct has information about on query. It can consist on more than
