@@ -64,13 +64,6 @@ var DefaultQueries = []Query{
 		},
 	},
 	{
-		ID:   "query9",
-		Name: "Query all files from HEAD",
-		Statements: []string{
-			`SELECT cf.file_path, f.blob_content FROM ref_commits r NATURAL JOIN commit_files cf NATURAL JOIN files f WHERE r.ref_name = "HEAD" AND r.history_index = 0`,
-		},
-	},
-	{
 		ID:   "query10",
 		Name: "Get all LICENSE blobs using pilosa index",
 		Statements: []string{
