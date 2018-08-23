@@ -76,13 +76,8 @@ func main() {
 		panic(err)
 	}
 
+	test.PrintTabbedResults()
 	res := test.GetResults()
-
-	// err = test.Stop()
-	// if err != nil {
-	// 	panic(err)
-	// }
-
 	if !res {
 		os.Exit(1)
 	}

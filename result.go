@@ -16,7 +16,7 @@ type Comparison struct {
 // Result holds the resources and number of rows from a version test.
 type Result struct {
 	*regression.Result
-
+	Query
 	Rows int64
 }
 
@@ -28,10 +28,8 @@ func (r *Result) ComparePrint(q *Result, allowance float64) bool {
 	c := Comparison{
 		Rows: regression.Percent(r.Rows, q.Rows),
 	}
+	ok = ok && (c.Rows <= allowance)
 
-	if c.Rows > allowance {
-		ok = false
-	}
 	fmt.Printf(regression.CompareFormat,
 		"Rows",
 		r.Rows,
