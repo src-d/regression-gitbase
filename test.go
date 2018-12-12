@@ -2,7 +2,6 @@ package gitbase
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"text/tabwriter"
@@ -181,10 +180,33 @@ func (t *Test) PrintTabbedResults() {
 	fmt.Println()
 }
 
+func average(pr []*Result) *regression.Result {
+	if len(pr) == 0 {
+		return nil
+	}
+
+	results := make([]*regression.Result, 0, len(pr))
+	for _, r := range pr {
+		results = append(results, r.Result)
+	}
+
+	return regression.Average(results)
+}
+
+func (t *Test) SaveLatestCSV() {
+	version := t.config.Versions[len(t.config.Versions)-1]
+	for _, q := range t.queries {
+		res := average(t.results[version][q.ID])
+		if err := res.SaveAllCSV(fmt.Sprintf("plot_%s_", q.ID)); err != nil {
+			panic(err)
+		}
+	}
+}
+
 // GetResults prints test results and returns if the tests passed.
 func (t *Test) GetResults() bool {
-	if len(t.config.Versions) < 2 {
-		panic("there should be at least two versions")
+	if len(t.config.Versions) < 1 {
+		panic("there should be at least one version")
 	}
 
 	versions := t.config.Versions
@@ -205,8 +227,11 @@ func (t *Test) GetResults() bool {
 				continue
 			}
 
-			queryA := getAverageResult(a[query.ID])
-			queryB := getAverageResult(b[query.ID])
+			queryA := a[query.ID][0]
+			queryB := b[query.ID][0]
+
+			queryA.Result = average(a[query.ID])
+			queryB.Result = average(b[query.ID])
 			c := queryA.ComparePrint(queryB, 10.0)
 			if !c {
 				ok = false
@@ -302,52 +327,6 @@ func (t *Test) prepareGitbase() error {
 	}
 
 	return nil
-}
-
-// Get the runs with lower wall time
-func getResultsSmaller(
-	a []*Result,
-	b []*Result,
-) (*Result, *Result) {
-	queryA := a[0]
-	queryB := b[0]
-	for i := 1; i < len(a); i++ {
-		if a[i].Wtime < queryA.Wtime {
-			queryA = a[i]
-		}
-
-		if b[i].Wtime < queryB.Wtime {
-			queryB = b[i]
-		}
-	}
-
-	return queryA, queryB
-}
-
-func getAverageResult(rs []*Result) *Result {
-	agg := NewResult()
-
-	// Discard first for warmup
-	if len(rs) > 2 {
-		rs = rs[1:]
-	}
-
-	// TODO(jfontan): rows should not be averaged
-	for _, r := range rs {
-		agg.Memory += r.Memory
-		agg.Wtime += r.Wtime
-		agg.Stime += r.Stime
-		agg.Utime += r.Utime
-		agg.Rows = r.Rows
-	}
-
-	agg.Memory = int64(math.Round(float64(agg.Memory) / float64(len(rs))))
-	agg.Wtime = time.Duration(math.Round(float64(agg.Wtime) / float64(len(rs))))
-	agg.Stime = time.Duration(math.Round(float64(agg.Stime) / float64(len(rs))))
-	agg.Utime = time.Duration(math.Round(float64(agg.Utime) / float64(len(rs))))
-	agg.Rows = int64(math.Round(float64(agg.Rows) / float64(len(rs))))
-
-	return agg
 }
 
 func regressionFile(gitbasePath string) string {

@@ -24,9 +24,18 @@ This tool executes several versions of gitbase and compares query times and reso
 The repositories and downloaded/built gitbase binaries are cached by default in "repos" and "binaries" repositories from the current directory.
 `
 
+type Options struct {
+	regression.Config
+
+	CSV bool `long:"csv" description:"save csv files with last result"`
+}
+
 func main() {
-	config := regression.NewConfig()
-	parser := flags.NewParser(&config, flags.Default)
+	options := Options{
+		Config: regression.NewConfig(),
+	}
+
+	parser := flags.NewParser(&options, flags.Default)
 	parser.LongDescription = description
 
 	args, err := parser.Parse()
@@ -41,6 +50,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	config := options.Config
+
 	if config.ShowRepos {
 		repos, err := regression.NewRepositories(config)
 		if err != nil {
@@ -52,8 +63,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	if len(args) < 2 {
-		log.Errorf(nil, "There should be at least two versions")
+	if len(args) < 1 {
+		log.Errorf(nil, "There should be at least one version")
 		os.Exit(1)
 	}
 
@@ -78,6 +89,10 @@ func main() {
 
 	test.PrintTabbedResults()
 	res := test.GetResults()
+	if res && options.CSV {
+		test.SaveLatestCSV()
+	}
+
 	if !res {
 		os.Exit(1)
 	}
