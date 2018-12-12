@@ -2,6 +2,7 @@ package gitbase
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"text/tabwriter"
@@ -204,7 +205,8 @@ func (t *Test) GetResults() bool {
 				continue
 			}
 
-			queryA, queryB := getResultsSmaller(a[query.ID], b[query.ID])
+			queryA := getAverageResult(a[query.ID])
+			queryB := getAverageResult(b[query.ID])
 			c := queryA.ComparePrint(queryB, 10.0)
 			if !c {
 				ok = false
@@ -320,6 +322,32 @@ func getResultsSmaller(
 	}
 
 	return queryA, queryB
+}
+
+func getAverageResult(rs []*Result) *Result {
+	agg := NewResult()
+
+	// Discard first for warmup
+	if len(rs) > 2 {
+		rs = rs[1:]
+	}
+
+	// TODO(jfontan): rows should not be averaged
+	for _, r := range rs {
+		agg.Memory += r.Memory
+		agg.Wtime += r.Wtime
+		agg.Stime += r.Stime
+		agg.Utime += r.Utime
+		agg.Rows = r.Rows
+	}
+
+	agg.Memory = int64(math.Round(float64(agg.Memory) / float64(len(rs))))
+	agg.Wtime = time.Duration(math.Round(float64(agg.Wtime) / float64(len(rs))))
+	agg.Stime = time.Duration(math.Round(float64(agg.Stime) / float64(len(rs))))
+	agg.Utime = time.Duration(math.Round(float64(agg.Utime) / float64(len(rs))))
+	agg.Rows = int64(math.Round(float64(agg.Rows) / float64(len(rs))))
+
+	return agg
 }
 
 func regressionFile(gitbasePath string) string {
