@@ -20,6 +20,10 @@ type Result struct {
 	Rows int64
 }
 
+func NewResult() *Result {
+	return &Result{Result: new(regression.Result)}
+}
+
 // ComparePrint shows the difference between two results and returns if
 // it is within margin.
 func (r *Result) ComparePrint(q *Result, allowance float64) bool {

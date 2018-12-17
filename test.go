@@ -180,10 +180,33 @@ func (t *Test) PrintTabbedResults() {
 	fmt.Println()
 }
 
+func average(pr []*Result) *regression.Result {
+	if len(pr) == 0 {
+		return nil
+	}
+
+	results := make([]*regression.Result, 0, len(pr))
+	for _, r := range pr {
+		results = append(results, r.Result)
+	}
+
+	return regression.Average(results)
+}
+
+func (t *Test) SaveLatestCSV() {
+	version := t.config.Versions[len(t.config.Versions)-1]
+	for _, q := range t.queries {
+		res := average(t.results[version][q.ID])
+		if err := res.SaveAllCSV(fmt.Sprintf("plot_%s_", q.ID)); err != nil {
+			panic(err)
+		}
+	}
+}
+
 // GetResults prints test results and returns if the tests passed.
 func (t *Test) GetResults() bool {
-	if len(t.config.Versions) < 2 {
-		panic("there should be at least two versions")
+	if len(t.config.Versions) < 1 {
+		panic("there should be at least one version")
 	}
 
 	versions := t.config.Versions
@@ -204,7 +227,11 @@ func (t *Test) GetResults() bool {
 				continue
 			}
 
-			queryA, queryB := getResultsSmaller(a[query.ID], b[query.ID])
+			queryA := a[query.ID][0]
+			queryB := b[query.ID][0]
+
+			queryA.Result = average(a[query.ID])
+			queryB.Result = average(b[query.ID])
 			c := queryA.ComparePrint(queryB, 10.0)
 			if !c {
 				ok = false
@@ -261,7 +288,7 @@ func (t *Test) runTest(
 		Wtime:  wall,
 		Stime:  time.Duration(rusage.Stime.Nano()),
 		Utime:  time.Duration(rusage.Utime.Nano()),
-		Memory: rusage.Maxrss,
+		Memory: rusage.Maxrss * 1024,
 	}
 
 	r := &Result{
@@ -300,26 +327,6 @@ func (t *Test) prepareGitbase() error {
 	}
 
 	return nil
-}
-
-// Get the runs with lower wall time
-func getResultsSmaller(
-	a []*Result,
-	b []*Result,
-) (*Result, *Result) {
-	queryA := a[0]
-	queryB := b[0]
-	for i := 1; i < len(a); i++ {
-		if a[i].Wtime < queryA.Wtime {
-			queryA = a[i]
-		}
-
-		if b[i].Wtime < queryB.Wtime {
-			queryB = b[i]
-		}
-	}
-
-	return queryA, queryB
 }
 
 func regressionFile(gitbasePath string) string {

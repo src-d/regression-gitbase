@@ -83,7 +83,21 @@ func NewBuild(
 
 // Build downloads and builds a binary from source code.
 func (b *Build) Build() (string, error) {
-	cont, err := b.download()
+	var cont bool
+	var err error
+
+	if b.Version == "local:HEAD" {
+		var pwd string
+		pwd, err = os.Getwd()
+		if err != nil {
+			return "", err
+		}
+
+		cont, err = b.link(pwd)
+	} else {
+		cont, err = b.download()
+	}
+
 	if err != nil {
 		return "", err
 	}
@@ -112,16 +126,54 @@ func (b *Build) Build() (string, error) {
 	return b.binaryPath(), nil
 }
 
-func (b *Build) download() (bool, error) {
+func (b *Build) createProjectPath(base bool) (string, error) {
 	dir, err := CreateTempDir()
 	if err != nil {
-		return false, err
+		return "", err
 	}
 
 	b.GoPath = dir
 
 	clonePath := b.projectPath()
-	err = os.MkdirAll(clonePath, 0755)
+	path := clonePath
+	if !base {
+		path = filepath.Dir(path)
+	}
+
+	err = os.MkdirAll(path, 0755)
+	if err != nil {
+		return "", err
+	}
+
+	return clonePath, nil
+}
+
+func (b *Build) link(path string) (bool, error) {
+	hash, err := getCurrentCommit(path)
+	if err != nil {
+		return false, err
+	}
+
+	exists, err := b.checkBinary(hash)
+	if err != nil || exists {
+		return false, err
+	}
+
+	linkPath, err := b.createProjectPath(false)
+	if err != nil {
+		return false, err
+	}
+
+	err = os.Symlink(path, linkPath)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (b *Build) download() (bool, error) {
+	clonePath, err := b.createProjectPath(true)
 	if err != nil {
 		return false, err
 	}
@@ -145,15 +197,9 @@ func (b *Build) download() (bool, error) {
 		return false, err
 	}
 
-	b.hash = hash
-
-	exist, err := fileExist(b.binaryPath())
-	if err != nil {
+	exists, err := b.checkBinary(hash)
+	if err != nil || exists {
 		return false, err
-	}
-	if exist {
-		log.Infof("Binary for %s (%s) already built", b.Version, hash)
-		return false, nil
 	}
 
 	refSpecs := []config.RefSpec{
@@ -180,6 +226,21 @@ func (b *Build) download() (bool, error) {
 	})
 
 	return true, err
+}
+
+func (b *Build) checkBinary(hash string) (bool, error) {
+	b.hash = hash
+
+	exists, err := fileExist(b.binaryPath())
+	if err != nil {
+		return false, err
+	}
+
+	if exists {
+		log.Infof("Binary for %s (%s) already built", b.Version, hash)
+	}
+
+	return exists, nil
 }
 
 func (b *Build) buildStep(step BuildStep) error {
@@ -258,4 +319,18 @@ func findReference(
 func parseVersion(version string) (string, string) {
 	r := regRepo.FindStringSubmatch(version)
 	return r[1], r[2]
+}
+
+func getCurrentCommit(path string) (string, error) {
+	r, err := git.PlainOpen(path)
+	if err != nil {
+		return "", err
+	}
+
+	head, err := r.Head()
+	if err != nil {
+		return "", err
+	}
+
+	return head.Hash().String(), nil
 }

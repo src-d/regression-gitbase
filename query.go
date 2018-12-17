@@ -47,30 +47,30 @@ var DefaultQueries = []Query{
 			`SELECT repository_id,contributor_count FROM (SELECT repository_id, COUNT(DISTINCT commit_author_email) AS contributor_count FROM commits GROUP BY repository_id) AS q ORDER BY contributor_count DESC LIMIT 10`,
 		},
 	},
-	{
-		ID:   "query5",
-		Name: "Create pilosa index on language UDF",
-		Statements: []string{
-			`CREATE INDEX language_idx ON files USING pilosa (language(file_path, blob_content)) WITH (async = false)`,
-		},
-	},
-	{
-		ID:   "query7",
-		Name: "Query by language using the pilosa index",
-		Statements: []string{
-			`CREATE INDEX language_idx ON files USING pilosa (language(file_path, blob_content)) WITH (async = false)`,
-			`SELECT file_path FROM files WHERE language(file_path, blob_content) = 'Go'`,
-			`DROP INDEX language_idx ON files`,
-		},
-	},
-	{
-		ID:   "query10",
-		Name: "Get all LICENSE blobs using pilosa index",
-		Statements: []string{
-			`CREATE INDEX file_path_idx ON files USING pilosa (file_path) WITH (async = false)`,
-			`SELECT blob_content FROM files WHERE file_path = 'LICENSE'`,
-		},
-	},
+	// {
+	// 	ID:   "query5",
+	// 	Name: "Create pilosa index on language UDF",
+	// 	Statements: []string{
+	// 		`CREATE INDEX language_idx ON files USING pilosa (language(file_path, blob_content)) WITH (async = false)`,
+	// 	},
+	// },
+	// {
+	// 	ID:   "query7",
+	// 	Name: "Query by language using the pilosa index",
+	// 	Statements: []string{
+	// 		`CREATE INDEX language_idx ON files USING pilosa (language(file_path, blob_content)) WITH (async = false)`,
+	// 		`SELECT file_path FROM files WHERE language(file_path, blob_content) = 'Go'`,
+	// 		`DROP INDEX language_idx ON files`,
+	// 	},
+	// },
+	// {
+	// 	ID:   "query10",
+	// 	Name: "Get all LICENSE blobs using pilosa index",
+	// 	Statements: []string{
+	// 		`CREATE INDEX file_path_idx ON files USING pilosa (file_path) WITH (async = false)`,
+	// 		`SELECT blob_content FROM files WHERE file_path = 'LICENSE'`,
+	// 	},
+	// },
 	{
 		ID:   "query12",
 		Name: "10 top repos by file count in HEAD",
@@ -92,15 +92,15 @@ var DefaultQueries = []Query{
 			`SELECT * FROM (SELECT commit_author_email as author,count(*) as num_commits FROM commits GROUP BY commit_author_email) t ORDER BY num_commits DESC`,
 		},
 	},
-	{
-		ID:   "query15",
-		Name: "Union operation with pilosa index",
-		Statements: []string{
-			`CREATE INDEX file_path_idx ON files USING pilosa (file_path) WITH (async = false)`,
-			`SELECT blob_content FROM files WHERE file_path = 'LICENSE' OR file_path = 'README.md'`,
-			`DROP INDEX file_path_idx ON files`,
-		},
-	},
+	// {
+	// 	ID:   "query15",
+	// 	Name: "Union operation with pilosa index",
+	// 	Statements: []string{
+	// 		`CREATE INDEX file_path_idx ON files USING pilosa (file_path) WITH (async = false)`,
+	// 		`SELECT blob_content FROM files WHERE file_path = 'LICENSE' OR file_path = 'README.md'`,
+	// 		`DROP INDEX file_path_idx ON files`,
+	// 	},
+	// },
 	{
 		ID:   "query17",
 		Name: "Count all commits with NOT operation",

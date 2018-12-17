@@ -2,7 +2,15 @@ package regression
 
 import (
 	"fmt"
+	"io"
+	"math"
+	"os"
 	"time"
+)
+
+const (
+	Memory = "memory"
+	Time   = "time"
 )
 
 // Result struct holds resource usage from a run.
@@ -84,4 +92,71 @@ func (p *Result) ComparePrint(q *Result, allowance float64) bool {
 func Percent(a, b int64) float64 {
 	diff := b - a
 	return (float64(diff) / float64(a)) * 100
+}
+
+// Average gets the average consumption from a set of results. If the number of
+// results is greater than 2 the first one is discarded as warmup run.
+func Average(rs []*Result) *Result {
+	agg := new(Result)
+
+	// Discard first for warmup
+	if len(rs) > 2 {
+		rs = rs[1:]
+	}
+
+	for _, r := range rs {
+		agg.Memory += r.Memory
+		agg.Wtime += r.Wtime
+		agg.Stime += r.Stime
+		agg.Utime += r.Utime
+	}
+
+	agg.Memory = int64(math.Round(float64(agg.Memory) / float64(len(rs))))
+	agg.Wtime = time.Duration(math.Round(float64(agg.Wtime) / float64(len(rs))))
+	agg.Stime = time.Duration(math.Round(float64(agg.Stime) / float64(len(rs))))
+	agg.Utime = time.Duration(math.Round(float64(agg.Utime) / float64(len(rs))))
+
+	return agg
+}
+
+func ToMiB(i int64) float64 {
+	return float64(i) / float64(1024*1024)
+}
+
+func (p *Result) SaveAllCSV(prefix string) error {
+	for _, s := range []string{Memory, Time} {
+		if err := p.SaveCSV(s, fmt.Sprintf("%s%s.csv", prefix, s)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Result) SaveCSV(series string, path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	if err := p.WriteCSV(series, f); err != nil {
+		_ = f.Close()
+		return err
+	}
+
+	return f.Close()
+}
+
+func (p *Result) WriteCSV(series string, w io.Writer) error {
+	switch series {
+	case Memory:
+		_, err := fmt.Fprintf(w, "%s\n%f\n", Memory, ToMiB(p.Memory))
+		return err
+	case Time:
+		_, err := fmt.Fprintf(w, "Wtime,Stime,Utime\n%f,%f,%f\n",
+			p.Wtime.Seconds(), p.Stime.Seconds(), p.Utime.Seconds())
+		return err
+	default:
+		return fmt.Errorf("unsupported series: %s", series)
+	}
 }
