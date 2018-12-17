@@ -17,6 +17,9 @@ func NewToolGitbase() regression.Tool {
 				Args:    []string{"dependencies", "packages"},
 			},
 		},
+		ExtraFiles: []string{
+			"_testdata/regression.yml",
+		},
 	}
 }
 
