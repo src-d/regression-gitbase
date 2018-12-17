@@ -18,6 +18,7 @@ This tool executes several versions of gitbase and compares query times and reso
 * latest - latest release from github. The binary will be downloaded.
 * remote:master - any tag or branch from gitbase repository. The binary will be built automatically.
 * local:fix/some-bug - tag or branch from the repository in the current directory. The binary will be built.
+* local:HEAD - current state of the repository. Binary is built.
 * pull:266 - code from pull request #266 from gitbase repo. Binary is built.
 * /path/to/gitbase - a gitbase binary built locally.
 
