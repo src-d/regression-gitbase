@@ -288,7 +288,7 @@ func (t *Test) runTest(
 		Wtime:  wall,
 		Stime:  time.Duration(rusage.Stime.Nano()),
 		Utime:  time.Duration(rusage.Utime.Nano()),
-		Memory: rusage.Maxrss,
+		Memory: rusage.Maxrss * 1024,
 	}
 
 	r := &Result{
