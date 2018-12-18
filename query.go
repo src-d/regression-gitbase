@@ -13,49 +13,49 @@ import (
 // ID per query matches IDs in gitbase/_testdata/regression.yml (for easier comparision)
 var DefaultQueries = []Query{
 	{
-		ID:   "query0",
+		ID:   "query00",
 		Name: "All commits",
 		Statements: []string{
 			"SELECT * FROM commits",
 		},
 	},
 	{
-		ID:   "query1",
+		ID:   "query01",
 		Name: "Last commit messages in HEAD for every repository",
 		Statements: []string{
 			`SELECT c.commit_message FROM refs r JOIN commits c ON r.commit_hash = c.commit_hash WHERE r.ref_name = 'HEAD'`,
 		},
 	},
 	{
-		ID:   "query2",
+		ID:   "query02",
 		Name: "All commit messages in HEAD history for every repository",
 		Statements: []string{
 			`SELECT c.commit_message FROM commits c NATURAL JOIN ref_commits r WHERE r.ref_name = 'HEAD'`,
 		},
 	},
 	{
-		ID:   "query3",
+		ID:   "query03",
 		Name: "Top 10 repositories by commit count in HEAD",
 		Statements: []string{
 			`SELECT repository_id,commit_count FROM (SELECT r.repository_id,count(*) AS commit_count FROM ref_commits r WHERE r.ref_name = "HEAD" GROUP BY r.repository_id) AS q ORDER BY commit_count DESC LIMIT 10`,
 		},
 	},
 	{
-		ID:   "query4",
+		ID:   "query04",
 		Name: "Top 10 repositories by contributor count (all branches)",
 		Statements: []string{
 			`SELECT repository_id,contributor_count FROM (SELECT repository_id, COUNT(DISTINCT commit_author_email) AS contributor_count FROM commits GROUP BY repository_id) AS q ORDER BY contributor_count DESC LIMIT 10`,
 		},
 	},
 	// {
-	// 	ID:   "query5",
+	// 	ID:   "query05",
 	// 	Name: "Create pilosa index on language UDF",
 	// 	Statements: []string{
 	// 		`CREATE INDEX language_idx ON files USING pilosa (language(file_path, blob_content)) WITH (async = false)`,
 	// 	},
 	// },
 	// {
-	// 	ID:   "query7",
+	// 	ID:   "query07",
 	// 	Name: "Query by language using the pilosa index",
 	// 	Statements: []string{
 	// 		`CREATE INDEX language_idx ON files USING pilosa (language(file_path, blob_content)) WITH (async = false)`,
