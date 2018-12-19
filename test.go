@@ -3,7 +3,6 @@ package gitbase
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"text/tabwriter"
 	"time"
 
@@ -82,7 +81,8 @@ func (t *Test) Run() error {
 			times = 1
 		}
 
-		if queries, err := loadQueriesYaml(regressionFile(gitbase.Path)); err != nil {
+		rf := gitbase.ExtraFile("regression.yml")
+		if queries, err := loadQueriesYaml(rf); err != nil {
 			t.log.Debugf(err.Error())
 		} else {
 			t.queries = queries
@@ -327,8 +327,4 @@ func (t *Test) prepareGitbase() error {
 	}
 
 	return nil
-}
-
-func regressionFile(gitbasePath string) string {
-	return filepath.Join(gitbasePath, "_testdata", "regression.yml")
 }

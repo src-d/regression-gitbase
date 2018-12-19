@@ -2,6 +2,7 @@ package regression
 
 import (
 	"fmt"
+	"path/filepath"
 	"runtime"
 )
 
@@ -31,18 +32,34 @@ type Config struct {
 	GitHubToken string `env:"REG_TOKEN" long:"token" short:"t" description:"Token used to connect to the API"`
 }
 
+// NewConfig returns an empty config with initialized OS.
 func NewConfig() Config {
 	return Config{
 		OS: runtime.GOOS,
 	}
 }
 
-type BuildStep struct {
-	Dir     string
-	Command string
-	Args    []string
+// VersionPath returns the path of the binary cache for an specific version.
+func (c *Config) VersionPath(version string) string {
+	return filepath.Join(c.BinaryCache, version)
 }
 
+// VersionPath returns the binary path an specific version.
+func (c *Config) BinaryPath(version, name string) string {
+	return filepath.Join(c.VersionPath(version), name)
+}
+
+// BuildStep describes a command used to build a tool.
+type BuildStep struct {
+	// Dir is the path where this command is executed.
+	Dir string
+	// Command is the executable to run.
+	Command string
+	// Args caintains the list of options to use with Command.
+	Args []string
+}
+
+// Tool describes a project to build and test.
 type Tool struct {
 	// Name has the tool name that is the same as the executable name.
 	Name string
@@ -53,6 +70,8 @@ type Tool struct {
 	ProjectPath string
 	// BuildSteps has the commands needed to build the tool.
 	BuildSteps []BuildStep
+	// ExtraFiles is a list of files used from the repository.
+	ExtraFiles []string
 }
 
 func (t Tool) DirName(os string) string {

@@ -1,10 +1,14 @@
 package regression
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/alcortesm/tgz"
 	"gopkg.in/src-d/go-errors.v1"
@@ -17,6 +21,12 @@ var regRelease = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
 // the release tarball.
 var ErrBinaryNotFound = errors.NewKind("binary not found in release tarball")
 
+// ErrTarball is returned when there is a problem with a tarball.
+var ErrTarball = errors.NewKind("cannot unpack tarball %s")
+
+// ErrExtraFile is returned when there is a problem saving an extra file.
+var ErrExtraFile = errors.NewKind("cannot save extra file %s")
+
 // Binary struct contains information and functionality to prepare and
 // use a binary version.
 type Binary struct {
@@ -26,6 +36,7 @@ type Binary struct {
 	releases *Releases
 	config   Config
 	tool     Tool
+	cacheDir string
 }
 
 // NewBinary creates a new Binary structure.
@@ -59,12 +70,13 @@ func (b *Binary) Download() error {
 			return err
 		}
 
-		binary, err := build.Build()
+		cacheDir, binary, err := build.Build()
 		if err != nil {
 			return err
 		}
 
 		b.Path = binary
+		b.cacheDir = cacheDir
 		return nil
 
 	case b.Version == "latest":
@@ -77,6 +89,7 @@ func (b *Binary) Download() error {
 
 	case !b.IsRelease():
 		b.Path = b.Version
+		b.cacheDir = filepath.Dir(b.Version)
 		return nil
 	}
 
@@ -86,22 +99,27 @@ func (b *Binary) Download() error {
 		return err
 	}
 
+	b.Path = cacheName
+	b.cacheDir = filepath.Dir(cacheName)
+
 	if exist {
 		log.Debugf("Binary for %s already downloaded", b.Version)
-		b.Path = cacheName
 		return nil
 	}
 
-	log.Debugf("Dowloading version %s", b.Version)
+	log.Debugf("Downloading version %s", b.Version)
 	err = b.downloadRelease()
 	if err != nil {
 		log.Errorf(err, "Could not download version %s", b.Version)
 		return err
 	}
 
-	b.Path = cacheName
-
 	return nil
+}
+
+// ExtraFile returns the path from a file in the cache directory.
+func (b *Binary) ExtraFile(name string) string {
+	return filepath.Join(b.cacheDir, name)
 }
 
 func (b *Binary) downloadRelease() error {
@@ -112,7 +130,7 @@ func (b *Binary) downloadRelease() error {
 	defer os.RemoveAll(tmpDir)
 
 	download := filepath.Join(tmpDir, "download.tar.gz")
-	err = b.releases.Get(b.Version, b.tarName(), download)
+	source, err := b.releases.Get(b.Version, b.tarName(), download)
 	if err != nil {
 		return err
 	}
@@ -125,13 +143,32 @@ func (b *Binary) downloadRelease() error {
 
 	binary := filepath.Join(path, b.dirName(), b.tool.Name)
 	err = CopyFile(binary, b.cacheName(), 0755)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if len(b.tool.ExtraFiles) > 0 {
+		extra := filepath.Join(tmpDir, "extra.tar.gz")
+		err := Download(source, extra)
+		if err != nil {
+			return ErrTarball.Wrap(err, extra)
+		}
+
+		// skip the first directory as files inside the source tar are inside
+		// a directory, for example:
+		//   src-d-gitbase-c533882/_testdata/regression.yml
+		cachePath := b.config.VersionPath(b.Version)
+		err = GetExtras(extra, cachePath, b.tool.ExtraFiles, 1)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (b *Binary) cacheName() string {
-	binName := fmt.Sprintf("%s.%s", b.tool.Name, b.Version)
-	return filepath.Join(b.config.BinaryCache, binName)
+	return b.config.BinaryPath(b.Version, b.tool.Name)
 }
 
 func (b *Binary) tarName() string {
@@ -156,4 +193,63 @@ func fileExist(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// GetExtras extracts the files from the tarball contained in the extras list
+// to the provided path. It can skip directories with the parameter depth.
+func GetExtras(tarball, path string, extras []string, depth int) error {
+	r, err := os.Open(tarball)
+	if err != nil {
+		return ErrTarball.Wrap(err, tarball)
+	}
+	defer r.Close()
+
+	gr, err := gzip.NewReader(r)
+	if err != nil {
+		return ErrTarball.Wrap(err, tarball)
+	}
+
+	t := tar.NewReader(gr)
+
+	for {
+		h, err := t.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return ErrTarball.Wrap(err, tarball)
+		}
+
+		name := skipDir(h.Name, depth)
+		if contains(extras, name) {
+			p := filepath.Join(path, filepath.Base(name))
+			err = IOToFile(t, p)
+			if err != nil {
+				return ErrExtraFile.Wrap(err, p)
+			}
+		}
+	}
+}
+
+func skipDir(name string, depth int) string {
+	if depth < 1 {
+		return name
+	}
+
+	s := strings.SplitN(name, string(os.PathSeparator), depth+1)
+	if len(s) < depth+1 {
+		return ""
+	}
+
+	return s[depth]
+}
+
+func contains(items []string, name string) bool {
+	for _, s := range items {
+		if s == name {
+			return true
+		}
+	}
+
+	return false
 }
