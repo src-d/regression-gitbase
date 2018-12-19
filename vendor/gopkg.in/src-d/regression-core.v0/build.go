@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"gopkg.in/src-d/go-errors.v1"
 	"gopkg.in/src-d/go-git.v4"
@@ -82,7 +83,7 @@ func NewBuild(
 }
 
 // Build downloads and builds a binary from source code.
-func (b *Build) Build() (string, error) {
+func (b *Build) Build() (string, string, error) {
 	var cont bool
 	var err error
 
@@ -90,7 +91,7 @@ func (b *Build) Build() (string, error) {
 		var pwd string
 		pwd, err = os.Getwd()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 
 		cont, err = b.link(pwd)
@@ -99,14 +100,14 @@ func (b *Build) Build() (string, error) {
 	}
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	defer os.RemoveAll(b.GoPath)
 
 	// Binary is already in place, don't continue
 	if !cont {
-		return b.binaryPath(), nil
+		return b.versionPath(), b.binaryPath(), nil
 	}
 
 	log.Infof("Building packages")
@@ -114,16 +115,21 @@ func (b *Build) Build() (string, error) {
 	for _, step := range b.tool.BuildSteps {
 		err = b.buildStep(step)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 	}
 
 	err = b.copyBinary()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return b.binaryPath(), nil
+	err = b.copyExtra()
+	if err != nil {
+		return "", "", err
+	}
+
+	return b.versionPath(), b.binaryPath(), nil
 }
 
 func (b *Build) createProjectPath(base bool) (string, error) {
@@ -272,13 +278,35 @@ func (b *Build) copyBinary() error {
 	return CopyFile(source, destination, 0755)
 }
 
+func (b *Build) copyExtra() error {
+	for _, e := range b.tool.ExtraFiles {
+		e = strings.TrimSpace(e)
+		if e == "" {
+			continue
+		}
+
+		s := filepath.Join(b.projectPath(), e)
+		d := b.config.BinaryPath(b.hash, filepath.Base(e))
+
+		err := CopyFile(s, d, 0644)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (b *Build) projectPath() string {
 	return filepath.Join(b.GoPath, "src", b.tool.ProjectPath)
 }
 
+func (b *Build) versionPath() string {
+	return b.config.VersionPath(b.hash)
+}
+
 func (b *Build) binaryPath() string {
-	name := fmt.Sprintf("%s.%s", b.tool.Name, b.hash)
-	return filepath.Join(b.config.BinaryCache, name)
+	return b.config.BinaryPath(b.hash, b.tool.Name)
 }
 
 func findReference(

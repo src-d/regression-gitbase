@@ -49,25 +49,26 @@ func oauthClient(token string) *http.Client {
 	return client
 }
 
-func (r *Releases) Get(version, asset, path string) error {
+func (r *Releases) Get(version, asset, path string) (string, error) {
 	err := r.getReleases()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	for _, rel := range r.repoReleases {
 		if rel.GetName() == version {
 			for _, a := range rel.Assets {
 				if a.GetName() == asset {
-					return r.download(a.GetBrowserDownloadURL(), path)
+					return rel.GetTarballURL(),
+						Download(a.GetBrowserDownloadURL(), path)
 				}
 			}
 
-			return ErrAssetNotFound.New(asset, version)
+			return "", ErrAssetNotFound.New(asset, version)
 		}
 	}
 
-	return ErrVersionNotFound.New(version)
+	return "", ErrVersionNotFound.New(version)
 }
 
 // Latest return the last version name from github releases
@@ -99,7 +100,7 @@ func (r *Releases) getReleases() error {
 	return nil
 }
 
-func (r *Releases) download(url, path string) error {
+func Download(url, path string) error {
 	dir := filepath.Dir(path)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
@@ -125,17 +126,17 @@ func (r *Releases) download(url, path string) error {
 	}
 	defer resp.Body.Close()
 
-	file, err := os.Create(downloadPath)
+	err = IOToFile(resp.Body, downloadPath)
+	return os.Rename(downloadPath, path)
+}
+
+func IOToFile(r io.Reader, path string) error {
+	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	err = os.Rename(downloadPath, path)
+	_, err = io.Copy(file, r)
 	return err
 }
