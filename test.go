@@ -41,7 +41,7 @@ func NewTest(config regression.Config) (*Test, error) {
 	return &Test{
 		config:  config,
 		repos:   repos,
-		queries: DefaultQueries,
+		queries: nil,
 		log:     l,
 	}, nil
 }
@@ -64,7 +64,7 @@ func (t *Test) Run() error {
 	for _, version := range t.config.Versions {
 		_, ok := results[version]
 		if !ok {
-			results[version] = make(gitbaseResults, len(t.queries))
+			results[version] = make(gitbaseResults)
 		}
 
 		gitbase, ok := t.gitbase[version]
@@ -83,7 +83,7 @@ func (t *Test) Run() error {
 
 		rf := gitbase.ExtraFile("regression.yml")
 		if queries, err := loadQueriesYaml(rf); err != nil {
-			t.log.Debugf(err.Error())
+			return err
 		} else {
 			t.queries = queries
 		}
