@@ -22,6 +22,7 @@ addons:
     packages:
     - gcc-6
     - g++-6
+    - libonig-dev
 
 before_install:
   - docker pull pilosa/pilosa:v0.9.0
