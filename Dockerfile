@@ -7,7 +7,7 @@ ENV REG_BINARIES=/cache/binaries
 ENV GITBASE_UNSTABLE_SQUASH_ENABLE=true
 
 RUN apt-get update && \
-    apt-get install -y dumb-init \
+    apt-get install -y dumb-init libonig-dev \
       git make bash gcc libxml2-dev && \
     apt-get autoremove -y && \
     ln -s /usr/local/go/bin/go /usr/bin
