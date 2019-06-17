@@ -1,4 +1,4 @@
-FROM golang:1.10-stretch
+FROM golang:1.12-stretch
 MAINTAINER source{d}
 
 ENV LOG_LEVEL=debug

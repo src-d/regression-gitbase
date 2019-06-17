@@ -2,8 +2,11 @@ language: go
 sudo: required
 
 go:
-  - 1.10.x
+  - 1.12.x
   - tip
+
+env:
+  - GO111MODULE=on
 
 service:
   - docker
