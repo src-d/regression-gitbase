@@ -1,7 +1,7 @@
 package gitbase
 
 import (
-	"gopkg.in/src-d/regression-core.v0"
+	"github.com/src-d/regression-core"
 )
 
 // NewToolGitbase creates a Tool with gitbase parameters filled.

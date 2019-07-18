@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	regression "gopkg.in/src-d/regression-core.v0"
+	regression "github.com/src-d/regression-core"
 )
 
 func TestTest(t *testing.T) {

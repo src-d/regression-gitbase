@@ -2,11 +2,14 @@ language: go
 sudo: required
 
 go:
-  - 1.10.x
+  - 1.12.x
   - tip
 
 service:
   - docker
+
+env:
+  - GO111MODULE=on
 
 matrix:
   fast_finish: true
