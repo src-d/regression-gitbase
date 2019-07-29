@@ -3,7 +3,7 @@ package gitbase
 import (
 	"os"
 
-	"gopkg.in/src-d/regression-core.v0"
+	"github.com/src-d/regression-core"
 )
 
 // Server wraps a gitbase server instance.
