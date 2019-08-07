@@ -14,7 +14,8 @@ func NewToolGitbase() regression.Tool {
 			{
 				Dir:     "",
 				Command: "make",
-				Args:    []string{"dependencies", "packages"},
+				Args:    []string{"packages"},
+				Env:     []string{"GOPROXY=https://proxy.golang.org"},
 			},
 		},
 		ExtraFiles: []string{

@@ -9,7 +9,7 @@ service:
   - docker
 
 env:
-  - GO111MODULE=on
+  - GO111MODULE=on GOPROXY=https://proxy.golang.org
 
 matrix:
   fast_finish: true
@@ -38,7 +38,6 @@ install:
   - sudo service mysql stop
 
 script:
-  - make dependencies
   - make test-coverage
 
 before_deploy:
