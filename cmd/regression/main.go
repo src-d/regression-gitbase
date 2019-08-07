@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 
-	"github.com/src-d/regression-gitbase"
+	gitbase "github.com/src-d/regression-gitbase"
 
 	flags "github.com/jessevdk/go-flags"
-	"gopkg.in/src-d/go-log.v1"
 	"github.com/src-d/regression-core"
+	"gopkg.in/src-d/go-log.v1"
 )
 
 var description = `gitbase regression tester.
@@ -29,6 +29,11 @@ type Options struct {
 	regression.Config
 
 	CSV bool `long:"csv" description:"save csv files with last result"`
+
+	// prometheus pushgateway related options
+	Prometheus bool `long:"prom" description:"store latest results to prometheus"`
+	PromConfig gitbase.PromConfig
+	CIConfig   gitbase.CIConfig
 }
 
 func main() {
@@ -52,7 +57,6 @@ func main() {
 	}
 
 	config := options.Config
-
 	if config.ShowRepos {
 		repos, err := regression.NewRepositories(config)
 		if err != nil {
@@ -90,11 +94,16 @@ func main() {
 
 	test.PrintTabbedResults()
 	res := test.GetResults()
-	if res && options.CSV {
-		test.SaveLatestCSV()
-	}
-
 	if !res {
 		os.Exit(1)
+	}
+	if options.CSV {
+		test.SaveLatestCSV()
+	}
+	if options.Prometheus {
+		if err := test.StoreLatestToPrometheus(options.PromConfig, options.CIConfig); err != nil {
+			log.Errorf(err, "Could not store results to prometheus")
+			os.Exit(1)
+		}
 	}
 }
