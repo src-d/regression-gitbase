@@ -6,8 +6,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"gopkg.in/src-d/go-log.v1"
 	"github.com/src-d/regression-core"
+	"gopkg.in/src-d/go-log.v1"
 )
 
 type (
@@ -201,6 +201,19 @@ func (t *Test) SaveLatestCSV() {
 			panic(err)
 		}
 	}
+}
+
+// StoreLatestToPrometheus stores latest version results to prometheus pushgateway
+func (t *Test) StoreLatestToPrometheus(promConfig PromConfig, ciConfig CIConfig) error {
+	version := t.config.Versions[len(t.config.Versions)-1]
+	cli := NewPromClient(promConfig)
+	for _, q := range t.queries {
+		res := average(t.results[version][q.ID])
+		if err := cli.Dump(res, version, q.ID, ciConfig.Branch, ciConfig.Commit); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetResults prints test results and returns if the tests passed.

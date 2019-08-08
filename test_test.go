@@ -3,8 +3,8 @@ package gitbase
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	regression "github.com/src-d/regression-core"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTest(t *testing.T) {
