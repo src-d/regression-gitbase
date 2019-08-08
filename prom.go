@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	WSeconds  = "w_avg_seconds"
-	SSeconds  = "s_avg_seconds"
-	USeconds  = "u_avg_seconds"
-	MemoryMiB = "mem_avg_mib"
+	WSeconds  = "regression_gitbase_w_avg_seconds"
+	SSeconds  = "regression_gitbase_s_avg_seconds"
+	USeconds  = "regression_gitbase_u_avg_seconds"
+	MemoryMiB = "regression_gitbase_mem_avg_mib"
 )
 
 var labels = []string{"version", "name", "branch", "commit"}
@@ -52,6 +52,10 @@ func NewPromClient(p PromConfig) *PromClient {
 	}
 }
 
+func toMiB(i int64) float64 {
+	return float64(i) / float64(1024*1024)
+}
+
 // Dump does observations and adds metrics to the pusher
 func (p *PromClient) Dump(res *regression.Result, version, name, branch, commit string) error {
 	labelValues := []string{version, name, branch, commit}
@@ -61,7 +65,7 @@ func (p *PromClient) Dump(res *regression.Result, version, name, branch, commit 
 	observe(WSeconds, res.Wtime.Seconds())
 	observe(SSeconds, res.Stime.Seconds())
 	observe(USeconds, res.Utime.Seconds())
-	observe(MemoryMiB, float64(res.Memory))
+	observe(MemoryMiB, toMiB(res.Memory))
 
 	log.Debugf("pushing metrics")
 	return p.pusher.Add()
