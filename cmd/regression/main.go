@@ -87,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = test.Run()
+	err = test.RunLoad()
 	if err != nil {
 		panic(err)
 	}

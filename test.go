@@ -1,6 +1,7 @@
 package gitbase
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -57,8 +58,27 @@ func (t *Test) Prepare() error {
 	return err
 }
 
-// Run executes the tests.
-func (t *Test) Run() error {
+func (t *Test) RunQueryCtx(ctx context.Context, gitbaseEnvs map[string]string, query Query) error {
+	for _, version := range t.config.Versions {
+		gitbase, ok := t.gitbase[version]
+		if !ok {
+			panic("gitbase not initialized. Was Prepare called?")
+		}
+		l := t.log.New(log.Fields{"version": version})
+		l.New(log.Fields{
+			"query": query,
+		}).Infof("Running query")
+
+		if err := t.runQueryCtx(ctx, gitbase, gitbaseEnvs, t.testRepos, query); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// RunLoad executes the tests.
+func (t *Test) RunLoad() error {
 	results := make(versionResults)
 
 	for _, version := range t.config.Versions {
@@ -97,7 +117,7 @@ func (t *Test) Run() error {
 					"query.Name": query.Name,
 				}).Infof("Running query")
 
-				result, err := t.runTest(gitbase, t.testRepos, query)
+				result, err := t.runLoadTest(gitbase, t.testRepos, query)
 				results[version][query.ID][i] = result
 
 				// TODO: do not stop on errors ???
@@ -255,7 +275,45 @@ func (t *Test) GetResults() bool {
 	return ok
 }
 
-func (t *Test) runTest(
+func (t *Test) runQueryCtx(
+	ctx context.Context,
+	gitbase *regression.Binary,
+	gitbaseEnvs map[string]string,
+	repos string,
+	query Query,
+) error {
+	t.log.Infof("Executing gitbase test")
+
+	server := NewServer(gitbase.Path, repos)
+	err := server.Start(gitbaseEnvs)
+	if err != nil {
+		t.log.With(log.Fields{
+			"repos":   repos,
+			"gitbase": gitbase.Path,
+		}).Errorf(err, "Could not execute gitbase")
+		return err
+	}
+
+	queries := NewSQLTest(server.URL(), query)
+	err = queries.Connect()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		queries.Disconnect()
+		server.Stop()
+	}()
+
+	_, err = queries.ExecuteCtx(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Test) runLoadTest(
 	gitbase *regression.Binary,
 	repos string,
 	query Query,
@@ -263,7 +321,7 @@ func (t *Test) runTest(
 	t.log.Infof("Executing gitbase test")
 
 	server := NewServer(gitbase.Path, repos)
-	err := server.Start()
+	err := server.Start(nil)
 	if err != nil {
 		t.log.With(log.Fields{
 			"repos":   repos,
