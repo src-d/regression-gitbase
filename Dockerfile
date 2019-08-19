@@ -13,6 +13,7 @@ RUN apt-get update && \
     ln -s /usr/local/go/bin/go /usr/bin
 
 ADD build/regression-gitbase_linux_amd64/regression /bin/
+ADD build/regression-gitbase_linux_amd64/regression-bblfsh-mockups /bin/
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["/bin/regression", "latest", "remote:master"]

@@ -23,7 +23,7 @@ func TestTest(t *testing.T) {
 	err = test.Prepare()
 	require.NoError(err)
 
-	err = test.Run()
+	err = test.RunLoad()
 	require.NoError(err)
 
 	test.GetResults()

@@ -1,12 +1,13 @@
 package gitbase
 
 import (
+	"context"
 	"database/sql"
 	"io/ioutil"
 
 	// Load mysql drivers.
 	_ "github.com/go-sql-driver/mysql"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // Query struct has information about on query. It can consist on more than
@@ -48,6 +49,23 @@ func (q *SQLTest) Connect() error {
 // Disconnect closes the mysql connection.
 func (q *SQLTest) Disconnect() error {
 	return q.db.Close()
+}
+
+func (q *SQLTest) ExecuteCtx(ctx context.Context) (int64, error) {
+	var count int64
+
+	for _, s := range q.Query.Statements {
+		rows, err := q.db.QueryContext(ctx, s)
+		if err != nil {
+			return 0, err
+		}
+
+		for rows.Next() {
+			count++
+		}
+	}
+
+	return count, nil
 }
 
 // Execute runs sql query on the gitbase server.

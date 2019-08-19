@@ -29,7 +29,7 @@ func (s *Server) URL() string {
 }
 
 // Start spawns a new gitbase server.
-func (s *Server) Start() error {
+func (s *Server) Start(envs map[string]string) error {
 	tmpDir, err := regression.CreateTempDir()
 	if err != nil {
 		return err
@@ -39,6 +39,7 @@ func (s *Server) Start() error {
 
 	return s.Server.Start(
 		s.binary,
+		envs,
 		"server",
 		"-g", s.repos,
 		"-i", tmpDir,
