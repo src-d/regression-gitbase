@@ -258,20 +258,19 @@ func testWarnings(ctx context.Context, o mockup.OptsV2, gitbaseEnvs map[string]s
 
 func prepareGitBaseEnvironment() (*gitbase.Test, error) {
 	config := regression.NewConfig()
-	parser := flags.NewParser(&config, flags.Default)
+	gitServerConfig := regression.GitServerConfig{}
 
-	args, err := parser.Parse()
+	args, err := parse(&config)
 	if err != nil {
-		if err, ok := err.(*flags.Error); ok {
-			if err.Type == flags.ErrHelp {
-				os.Exit(0)
-			}
-		}
-		return nil, errors.NewKind("could not parse arguments").Wrap(err)
+		return nil, err
+	}
+	_, err = parse(&gitServerConfig)
+	if err != nil {
+		return nil, err
 	}
 
 	if config.ShowRepos {
-		repos, err := regression.NewRepositories(config)
+		repos, err := regression.NewRepositories(gitServerConfig)
 		if err != nil {
 			return nil, errors.NewKind("could not get repositories").Wrap(err)
 		}
@@ -285,7 +284,7 @@ func prepareGitBaseEnvironment() (*gitbase.Test, error) {
 	}
 	config.Versions = args
 
-	test, err := gitbase.NewTest(config)
+	test, err := gitbase.NewTest(config, gitServerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -296,6 +295,21 @@ func prepareGitBaseEnvironment() (*gitbase.Test, error) {
 	}
 
 	return test, nil
+}
+
+func parse(data interface{}) ([]string, error) {
+	parser := flags.NewParser(data, flags.Default)
+
+	args, err := parser.Parse()
+	if err != nil {
+		if err, ok := err.(*flags.Error); ok {
+			if err.Type == flags.ErrHelp {
+				os.Exit(0)
+			}
+		}
+		return nil, errors.NewKind("could not parse arguments").Wrap(err)
+	}
+	return args, nil
 }
 
 func getUASTBytes(text string) ([]byte, error) {

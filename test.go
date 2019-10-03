@@ -28,8 +28,8 @@ type (
 )
 
 // NewTest creates a new Test struct.
-func NewTest(config regression.Config) (*Test, error) {
-	repos, err := regression.NewRepositories(config)
+func NewTest(config regression.Config, serverConfig regression.GitServerConfig) (*Test, error) {
+	repos, err := regression.NewRepositories(serverConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (t *Test) SaveLatestCSV() {
 }
 
 // StoreLatestToPrometheus stores latest version results to prometheus pushgateway
-func (t *Test) StoreLatestToPrometheus(promConfig PromConfig, ciConfig CIConfig) error {
+func (t *Test) StoreLatestToPrometheus(promConfig regression.PromConfig, ciConfig regression.CIConfig) error {
 	version := t.config.Versions[len(t.config.Versions)-1]
 	cli := NewPromClient(promConfig)
 	for _, q := range t.queries {

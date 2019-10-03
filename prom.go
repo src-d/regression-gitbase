@@ -18,27 +18,14 @@ var labels = []string{"version", "name", "branch", "commit"}
 
 type metrics map[string]*prometheus.SummaryVec
 
-// CIConfig is config that represents CI build metadata, values of CIConfig will be added to metrics as labels
-type CIConfig struct {
-	Branch string `env:"GIT_BRANCH" default:"" long:"ci-branch" description:"branch env"`
-	Commit string `env:"GIT_COMMIT" default:"" long:"ci-commit" description:"commit env"`
-}
-
-// PromConfig contains prometheus pushgateway configuration info
-type PromConfig struct {
-	Address string `env:"PROM_ADDRESS" default:"" long:"prom-address" description:"prometheus pushgateway address"`
-	Job     string `env:"PROM_JOB" default:"" long:"prom-job" description:"prometheus job"`
-}
-
 // PromClient is the wrapper around pusher that also keeps metrics
 type PromClient struct {
 	pusher  *push.Pusher
 	metrics metrics
 }
 
-// TODO(lwsanty): one day it possibly could be a part of regression-core
 // NewPromClient inits new pusher, creates metrics and adds them to the collector
-func NewPromClient(p PromConfig) *PromClient {
+func NewPromClient(p regression.PromConfig) *PromClient {
 	pusher := push.New(p.Address, p.Job)
 	log.Debugf("adding metrics to the pusher")
 
