@@ -27,13 +27,14 @@ The repositories and downloaded/built gitbase binaries are cached by default in 
 
 type Options struct {
 	regression.Config
+	GitServerConfig regression.GitServerConfig
 
 	CSV bool `long:"csv" description:"save csv files with last result"`
 
 	// prometheus pushgateway related options
 	Prometheus bool `long:"prom" description:"store latest results to prometheus"`
-	PromConfig gitbase.PromConfig
-	CIConfig   gitbase.CIConfig
+	PromConfig regression.PromConfig
+	CIConfig   regression.CIConfig
 }
 
 func main() {
@@ -57,8 +58,9 @@ func main() {
 	}
 
 	config := options.Config
+	gitServerConfig := options.GitServerConfig
 	if config.ShowRepos {
-		repos, err := regression.NewRepositories(config)
+		repos, err := regression.NewRepositories(gitServerConfig)
 		if err != nil {
 			log.Errorf(err, "Could not get repositories")
 			os.Exit(1)
@@ -75,7 +77,7 @@ func main() {
 
 	config.Versions = args
 
-	test, err := gitbase.NewTest(config)
+	test, err := gitbase.NewTest(config, gitServerConfig)
 	if err != nil {
 		panic(err)
 	}

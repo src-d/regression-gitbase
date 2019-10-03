@@ -11,13 +11,14 @@ func TestTest(t *testing.T) {
 	require := require.New(t)
 
 	config := regression.NewConfig()
-	config.RepositoriesCache = "repo"
 	config.BinaryCache = "binaries"
 	config.Versions = []string{"remote:regression", "remote:master"}
-	config.Complexity = 0
 	config.Repeat = 1
 
-	test, err := NewTest(config)
+	test, err := NewTest(config, regression.GitServerConfig{
+		RepositoriesCache: "repo",
+		Complexity:        0,
+	})
 	require.NoError(err)
 
 	err = test.Prepare()
