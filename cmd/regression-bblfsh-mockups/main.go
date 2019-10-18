@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ const (
 	limit             = 10
 	queryTimeoutTotal = 15 * time.Second
 
-	captureOutputDelay = 500 * time.Millisecond
+	captureOutputDelay = time.Second
 )
 
 var (
@@ -53,8 +54,6 @@ func main() {
 		{"TestBrokenUASTInResponseWarning", TestBrokenUASTInResponseWarning},
 		{"TestParseErrorWarnings", TestParseErrorWarnings},
 		{"TestQueryExecBeforeTimeout", TestQueryExecBeforeTimeout},
-		// TODO(lwsanty): can possibly fail because of https://github.com/src-d/go-mysql-server/pull/801
-		// TODO this test needs refactor after https://github.com/src-d/gitbase/issues/950
 		{"TestQueryExecAfterTimeout", TestQueryExecAfterTimeout},
 	} {
 		t := t
@@ -180,7 +179,7 @@ func TestParseErrorWarnings() error {
 		)
 		if len(parseErrs) == 0 {
 			text = "level=warning"
-			repeats = 1
+			repeats = 0
 		} else {
 			var tmp []string
 			for _, pe := range parseErrs {
@@ -248,6 +247,10 @@ func testWarnings(ctx context.Context, o mockup.OptsV2, gitbaseEnvs map[string]s
 	}
 
 	log.Infof("out: %v", outPut)
+	// remove "context canceled" warnings due to https://github.com/src-d/gitbase/issues/955#issuecomment-543224426
+	re := regexp.MustCompile("(?m)[\r\n]+^.*context canceled.*$")
+	outPut = re.ReplaceAllString(outPut, "")
+
 	actRepeats := strings.Count(outPut, expWarning)
 	if repeats != actRepeats {
 		return errors.NewKind("repeats of %q: exp: %v act: %v").New(expWarning, repeats, actRepeats)
